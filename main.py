@@ -42,7 +42,10 @@ for e in range(episodes):
 		total_reward += tweaked_reward
 		
 		if done:
-			print("episode: {}/{}, score: {}".format(e, episodes, total_reward))
+			if reward == 1:
+				print("episode: {}/{}, score: {:.2f} and goal has been found!".format(e, episodes, total_reward))
+			else:
+				print("episode: {}/{}, score: {:.2f}".format(e, episodes, total_reward))
 			break
 	
 	agent.reset()

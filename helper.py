@@ -17,8 +17,7 @@ def tweak_frozen_lake_reward(reward, done):
 	if done:
 		if reward < 1:
 			reward = -1
-		else:
-			print ('FOUND GOAL!')
+
 	return reward
 
 def package_state(state, name_of_gym):
