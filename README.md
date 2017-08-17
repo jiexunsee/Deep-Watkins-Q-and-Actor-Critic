@@ -1,5 +1,4 @@
 # Deep TD Lambda
----
 ## Introduction
 This repository contains a reinforcement learning agent that uses the TD(lambda) algorithm to solve OpenAI gym games. Many thanks to Siraj's [video](https://www.youtube.com/watch?v=79pmNdyxEGo) for the challenge.
 
