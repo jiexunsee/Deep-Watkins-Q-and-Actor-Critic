@@ -3,7 +3,7 @@ import numpy as np
 import random
 
 class DeepTDLambdaLearner:
-	def __init__(self, n_actions, n_states, discount=0.7, alpha=0.3, epsilon=1, epsilon_decay=0.995, lamb=0.5):
+	def __init__(self, n_actions, n_states, discount=0.7, alpha=0.2, epsilon=1, epsilon_decay=0.99, lamb=0.5):
 		self.n_actions = n_actions
 		self.n_states = n_states
 		self.discount = discount
