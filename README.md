@@ -31,11 +31,11 @@ Using TensorFlow also means that this code can easily be extended to deeper Q le
 This learning agent has a vanilla neural network that takes the state as input and outputs a list of Q values for each action. Q learning with TD(lambda) is performed using these estimated values.
 
 ## Results
-Running this algorithm on gym's [FrozenLake-v0](https://gym.openai.com/envs/FrozenLake-v0), we solve the game in about 150 episodes. This is a description of the environment:
+Running this algorithm on gym's [FrozenLake-v0](https://gym.openai.com/envs/FrozenLake-v0), we solve the game in about 300 episodes. This is a description of the environment:
 
 > The agent controls the movement of a character in a grid world. Some tiles of the grid are walkable, and others lead to the agent falling into the water. Additionally, the movement direction of the agent is uncertain and only partially depends on the chosen direction. The agent is rewarded for finding a walkable path to a goal tile.
 
-According to gym, 'FrozenLake-v0 defines "solving" as getting average reward of 0.78 over 100 consecutive trials'. It has to be said that I tweaked the rewards I gave the agent to help it learn faster, so the above metric may not really apply. However, getting a reward of over 0.78 for 100 trials corresponds to reaching the end goal >78% of the time, something which the agent achieves after about 150 episodes (trials).
+According to gym, 'FrozenLake-v0 defines "solving" as getting average reward of 0.78 over 100 consecutive trials'. It has to be said that I tweaked the rewards I gave the agent to help it learn faster, so the above metric may not really apply. However, getting a reward of over 0.78 for 100 trials corresponds to reaching the end goal >78% of the time, something which the agent achieves after about 300 episodes (trials).
 
 ## Notes
 This piece of code took a long time to get right. There were hyperparameters to tune (most of which still need to be tuned further). Additionally, debugging was a pain, as it was necessary to look at the weights and how they change at each state transition to see what was going wrong. 
