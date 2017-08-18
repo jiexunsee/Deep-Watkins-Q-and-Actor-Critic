@@ -3,7 +3,7 @@ import numpy as np
 import random
 
 class DeepTDLambdaLearner:
-	def __init__(self, n_actions, n_states, discount=0.7, alpha=0.2, epsilon=1, epsilon_decay=0.99, lamb=0.5):
+	def __init__(self, n_actions, n_states, discount=0.8, alpha=0.1, epsilon=1, epsilon_decay=0.99, lamb=0.5):
 		self.n_actions = n_actions
 		self.n_states = n_states
 		self.discount = discount
@@ -69,12 +69,12 @@ class DeepTDLambdaLearner:
 	
 	def get_e_greedy_action(self, state):
 		if np.random.rand() <= self.epsilon:
-			return random.randrange(self.n_actions)
+			return random.randrange(self.n_actions), True
 		else:
-			return self.get_best_action(state)
+			return self.get_best_action(state), False
 	
-	def reset(self):
-		self.e_trace = self._get_eligibility_trace(self.grads_and_vars)
+	def reset_e_trace(self):
+		self.e_trace = [0*e for e in self.e_trace]
 		
 	def print_weights(self):
 		w1 = self.sess.run(self.weight1)
@@ -84,7 +84,7 @@ class DeepTDLambdaLearner:
 		print (self.predict_Q_values(state))
 	
 	# The most important function
-	def learn(self, state, action, next_state, reward):
+	def learn(self, state, action, next_state, reward, greedy):
 		target = reward + self.get_max_Q_value(next_state)
 		old_Q = self.get_Q_value(state, action)
 		delta = target - old_Q
@@ -93,15 +93,18 @@ class DeepTDLambdaLearner:
 		if abs(delta)>1000:
 			print ('Warning! Delta getting very big. Delta = {}'.format(delta))
 		
-		# Getting gradients (and the variables they correspond to). Tensorflow is very handy for this.
-		grads_and_vars = self.sess.run(self.grads_and_vars, 
-											feed_dict={self.state_tensor: state})
-		evaluated_gradients = [gv[0] for gv in grads_and_vars]
-		self.e_trace = self._compute_e_trace(evaluated_gradients, self.e_trace)
+		if greedy:
+			self.reset_e_trace()
+		else:
+			# Getting gradients (and the variables they correspond to). Tensorflow is very handy for this.
+			grads_and_vars = self.sess.run(self.grads_and_vars, 
+												feed_dict={self.state_tensor: state})
+			evaluated_gradients = [gv[0] for gv in grads_and_vars]
+			self.e_trace = self._compute_e_trace(evaluated_gradients, self.e_trace)
 
 		# Realised I need to add a negative sign to delta. I think because tensorflow's optimizer would try to minimize.
 		change = [-delta * e for e in self.e_trace] 
-		assert (len(change) == len(evaluated_gradients))
+
 		
 		# APPLY GRADIENT UPDATE. Eligibility trace (e_trace) is essentially a modified gradient. change is the change to be applied to the weights.
 		# To alter the gradients before applying them, we have to do some session running and dictionary feeding

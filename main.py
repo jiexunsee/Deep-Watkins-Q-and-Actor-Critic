@@ -1,4 +1,5 @@
 import gym
+from gym import wrappers
 import numpy as np
 
 from helper import *
@@ -6,9 +7,10 @@ from DeepTDLambdaLearner import DeepTDLambdaLearner
 
 
 name_of_gym = 'FrozenLake-v0'
-episodes = 500
+episodes = 1000
 
 env = gym.make(name_of_gym)
+env = wrappers.Monitor(env, '/tmp/frozenlake-1', force=True)
 n_actions = env.action_space.n
 
 try:
@@ -27,7 +29,7 @@ for e in range(episodes):
 	total_reward = 0
 	done = False
 	while not done:
-		action = agent.get_e_greedy_action(state)
+		action, greedy = agent.get_e_greedy_action(state)
 		next_state, reward, done, _ = env.step(action)
 		# env.render()
 		
@@ -36,7 +38,7 @@ for e in range(episodes):
 		# Tweaking the reward to help the agent learn faster
 		tweaked_reward = tweak_reward(reward, done, name_of_gym)
 		
-		agent.learn(state, action, next_state, tweaked_reward)
+		agent.learn(state, action, next_state, tweaked_reward, greedy)
 		
 		state = next_state
 		total_reward += tweaked_reward
@@ -48,5 +50,7 @@ for e in range(episodes):
 				print("episode: {}/{}, score: {:.2f}".format(e, episodes, total_reward))
 			break
 	
-	agent.reset()
+	agent.reset_e_trace()
 # env.close()
+
+gym.upload('/tmp/frozenlake-1', api_key='sk_5iXTcYwRUy9chDqhy4M6w')
