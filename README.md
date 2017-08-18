@@ -43,3 +43,5 @@ This piece of code took a long time to get right. There were hyperparameters to 
 The stochasticity in the environment introduces an element of luck and messes with the agent's learning. For example, the agent could choose a direction in a state based on the high Q value of that state-action pair, but the randomness could cause it to fall into the water instead. This would cause the agent to learn the a lower Q value for the previous state and action, even if it was a good action to take at that state.
 
 Hence, I would recommend trying FrozenLake-v0 without the stochasticity in the agent's movement. This allowed me to debug much more easily, as the agent's moves would be fully deterministic. The game would be much more easily solved too. This [link](https://github.com/openai/gym/issues/565) has a simple piece of code to do it. 
+
+**Update:** Will be adding one or two lines such that the eligibility trace update is set to zero when an epsilon greedy action is taken. This would essentially incorporate importance sampling. Also shall try to investigate why episode runs seem to get slower with time.
