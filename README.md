@@ -37,7 +37,7 @@ Running this algorithm on gym's [FrozenLake-v0](https://gym.openai.com/envs/Froz
 
 > The agent controls the movement of a character in a grid world. Some tiles of the grid are walkable, and others lead to the agent falling into the water. Additionally, the movement direction of the agent is uncertain and only partially depends on the chosen direction. The agent is rewarded for finding a walkable path to a goal tile.
 
-[Link](https://gym.openai.com/evaluations/eval_OyMhE4BARAmQDY8ixyZALQ) to the upload of my run on OpenAI gym which took 88 episodes to solve.
+[Link](https://gym.openai.com/evaluations/eval_OyMhE4BARAmQDY8ixyZALQ) to the upload of my run on OpenAI gym which took 85 episodes to solve.
 
 ## Notes
 This piece of code took a long time to get right. There were hyperparameters to tune (most of which still need to be tuned further). Additionally, debugging was a pain, as it was necessary to look at the weights and how they change at each state transition to see what was going wrong. 
