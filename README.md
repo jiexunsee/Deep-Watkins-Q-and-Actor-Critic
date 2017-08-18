@@ -30,6 +30,8 @@ Using TensorFlow also means that this code can easily be extended to deeper Q le
 
 This learning agent has a vanilla neural network that takes the state as input and outputs a list of Q values for each action. Q learning with TD(lambda) is performed using these estimated values.
 
+***Update**: The algorithm I have used is more formally known as Watkin's Q(lambda) algorithm.*
+
 ## Results
 Running this algorithm on gym's [FrozenLake-v0](https://gym.openai.com/envs/FrozenLake-v0), we solve the game in less than 100 episodes if the hyperparameters are set right. This is a description of the environment:
 
@@ -46,6 +48,6 @@ Hence, for a start, I would recommend trying FrozenLake-v0 without the stochasti
 
 **Updates:** 
 * Shall try to investigate why episode runs seem to get slower with time.
-* Will be modifying the algorithm here to follow Watkin's Q(lambda). Currently this is an off-policy learning algorithm (epsilon greedy Q learning) so updates shouldn't be made when the agent doesn't follow the target policy. May also implement [this paper's](http://proceedings.mlr.press/v32/sutton14.pdf) method too.
+* May look to implement [this paper's](http://proceedings.mlr.press/v32/sutton14.pdf) method
 
 
