@@ -44,4 +44,4 @@ The stochasticity in the environment introduces an element of luck and messes wi
 
 Hence, I would recommend trying FrozenLake-v0 without the stochasticity in the agent's movement. This allowed me to debug much more easily, as the agent's moves would be fully deterministic. The game would be much more easily solved too. This [link](https://github.com/openai/gym/issues/565) has a simple piece of code to do it. 
 
-**Update:** Will be adding one or two lines such that the eligibility trace update is set to zero when an epsilon greedy action is taken. This would essentially incorporate importance sampling. Also shall try to investigate why episode runs seem to get slower with time.
+**Update:** Shall try to investigate why episode runs seem to get slower with time.
