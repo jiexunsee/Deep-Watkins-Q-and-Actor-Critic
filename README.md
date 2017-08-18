@@ -44,4 +44,8 @@ The stochasticity in the environment introduces an element of luck and messes wi
 
 Hence, I would recommend trying FrozenLake-v0 without the stochasticity in the agent's movement. This allowed me to debug much more easily, as the agent's moves would be fully deterministic. The game would be much more easily solved too. This [link](https://github.com/openai/gym/issues/565) has a simple piece of code to do it. 
 
-**Update:** Shall try to investigate why episode runs seem to get slower with time.
+**Updates:** 
+* Shall try to investigate why episode runs seem to get slower with time.
+* Will be modifying the algorithm here to follow Watkin's Q(lambda). Currently this is an off-policy learning algorithm (epsilon greedy Q learning) so updates shouldn't be made when the agent doesn't follow the target policy. May also implement [this paper's](http://proceedings.mlr.press/v32/sutton14.pdf) method too.
+
+
