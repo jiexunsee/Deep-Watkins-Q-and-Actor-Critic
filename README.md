@@ -30,16 +30,24 @@ Using TensorFlow also means that this code can easily be extended to deeper Q le
 
 This learning agent has a vanilla neural network that takes the state as input and outputs a list of Q values for each action. Q learning with TD(lambda) is performed using these estimated values.
 
+***Update**: The algorithm I have used is more formally known as Watkin's Q(lambda) algorithm.*
+
 ## Results
-Running this algorithm on gym's [FrozenLake-v0](https://gym.openai.com/envs/FrozenLake-v0), we solve the game in about 300 episodes. This is a description of the environment:
+Running this algorithm on gym's [FrozenLake-v0](https://gym.openai.com/envs/FrozenLake-v0), we solve the game in less than 100 episodes if the hyperparameters are set right. This is a description of the environment:
 
 > The agent controls the movement of a character in a grid world. Some tiles of the grid are walkable, and others lead to the agent falling into the water. Additionally, the movement direction of the agent is uncertain and only partially depends on the chosen direction. The agent is rewarded for finding a walkable path to a goal tile.
 
-According to gym, 'FrozenLake-v0 defines "solving" as getting average reward of 0.78 over 100 consecutive trials'. It has to be said that I tweaked the rewards I gave the agent to help it learn faster, so the above metric may not really apply. However, getting a reward of over 0.78 for 100 trials corresponds to reaching the end goal >78% of the time, something which the agent achieves after about 300 episodes (trials).
+[Link](https://gym.openai.com/evaluations/eval_OyMhE4BARAmQDY8ixyZALQ) to the upload of my run on OpenAI gym which took 85 episodes to solve.
 
 ## Notes
 This piece of code took a long time to get right. There were hyperparameters to tune (most of which still need to be tuned further). Additionally, debugging was a pain, as it was necessary to look at the weights and how they change at each state transition to see what was going wrong. 
 
 The stochasticity in the environment introduces an element of luck and messes with the agent's learning. For example, the agent could choose a direction in a state based on the high Q value of that state-action pair, but the randomness could cause it to fall into the water instead. This would cause the agent to learn the a lower Q value for the previous state and action, even if it was a good action to take at that state.
 
-Hence, I would recommend trying FrozenLake-v0 without the stochasticity in the agent's movement. This allowed me to debug much more easily, as the agent's moves would be fully deterministic. The game would be much more easily solved too. This [link](https://github.com/openai/gym/issues/565) has a simple piece of code to do it. 
+Hence, for a start, I would recommend trying FrozenLake-v0 without the stochasticity in the agent's movement. This allowed me to debug much more easily, as the agent's moves would be fully deterministic. The game would be much more easily solved too. This [link](https://github.com/openai/gym/issues/565) has a simple piece of code to do it. After solving the deterministic FrozenLake, then one could move on to the actual one.
+
+**Updates:** 
+* Shall try to investigate why episode runs seem to get slower with time.
+* May look to implement [this paper's](http://proceedings.mlr.press/v32/sutton14.pdf) method
+
+
