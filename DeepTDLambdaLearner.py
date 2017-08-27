@@ -16,6 +16,10 @@ class DeepTDLambdaLearner:
 		self.state_tensor, self.Q_values_tensor, self.chosen_value_tensor, self.opt, self.weight1 = self._build_model()
 		self.grads_and_vars = self._get_gradients(self.opt)
 		self.e_trace = self._get_eligibility_trace(self.grads_and_vars)
+
+		self.grad_placeholder = [(tf.placeholder("float", shape=grad[0].get_shape()), grad[1]) for grad in self.grads_and_vars]
+		self.apply_placeholder_op = self.opt.apply_gradients(self.grad_placeholder)
+
 		self.sess = tf.Session()
 		self.sess.run(tf.global_variables_initializer())
 		
@@ -69,7 +73,11 @@ class DeepTDLambdaLearner:
 	
 	def get_e_greedy_action(self, state):
 		if np.random.rand() <= self.epsilon:
-			return random.randrange(self.n_actions), True
+			action = random.randrange(self.n_actions)
+			if action == self.get_best_action:
+				return action, False
+			else:
+				return action, True
 		else:
 			return self.get_best_action(state), False
 	
@@ -82,7 +90,7 @@ class DeepTDLambdaLearner:
 		
 	def print_Q_values(self, state):
 		print (self.predict_Q_values(state))
-	
+
 	# The most important function
 	def learn(self, state, action, next_state, reward, greedy):
 		target = reward + self.get_max_Q_value(next_state)
@@ -93,7 +101,7 @@ class DeepTDLambdaLearner:
 		if abs(delta)>1000:
 			print ('Warning! Delta getting very big. Delta = {}'.format(delta))
 		
-		if greedy:
+		if greedy: # as per Watkin's Q, if the target policy wouldn't have produced the same action, the trace is set to 0
 			self.reset_e_trace()
 		else:
 			# Getting gradients (and the variables they correspond to). Tensorflow is very handy for this.
@@ -105,16 +113,13 @@ class DeepTDLambdaLearner:
 		# Realised I need to add a negative sign to delta. I think because tensorflow's optimizer would try to minimize.
 		change = [-delta * e for e in self.e_trace] 
 
-		
 		# APPLY GRADIENT UPDATE. Eligibility trace (e_trace) is essentially a modified gradient. change is the change to be applied to the weights.
 		# To alter the gradients before applying them, we have to do some session running and dictionary feeding
-		grad_placeholder = [(tf.placeholder("float", shape=grad[0].get_shape()), grad[1]) for grad in self.grads_and_vars]
-		apply_placeholder_op = self.opt.apply_gradients(grad_placeholder)
-		
 		feed_dict = {}
-		for i in range(len(grad_placeholder)):
-			feed_dict[grad_placeholder[i][0]] = change[i]
-		self.sess.run(apply_placeholder_op, feed_dict=feed_dict)
-		
+		for i in range(len(self.grad_placeholder)):
+			feed_dict[self.grad_placeholder[i][0]] = change[i]
+
+		self.sess.run(self.apply_placeholder_op, feed_dict=feed_dict)
+
 		# Decay epsilon
 		self.epsilon = self.epsilon*self.epsilon_decay # need to add epsilon_decay as a init parameter
