@@ -47,7 +47,6 @@ The stochasticity in the environment introduces an element of luck and messes wi
 Hence, for a start, I would recommend trying FrozenLake-v0 without the stochasticity in the agent's movement. This allowed me to debug much more easily, as the agent's moves would be fully deterministic. The game would be much more easily solved too. This [link](https://github.com/openai/gym/issues/565) has a simple piece of code to do it. After solving the deterministic FrozenLake, then one could move on to the actual one.
 
 **Updates:** 
-* Shall try to investigate why episode runs seem to get slower with time.
 * May look to implement [this paper's](http://proceedings.mlr.press/v32/sutton14.pdf) method
 
 
