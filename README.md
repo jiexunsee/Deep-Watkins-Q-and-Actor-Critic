@@ -37,7 +37,9 @@ Running this algorithm on gym's [FrozenLake-v0](https://gym.openai.com/envs/Froz
 
 > The agent controls the movement of a character in a grid world. Some tiles of the grid are walkable, and others lead to the agent falling into the water. Additionally, the movement direction of the agent is uncertain and only partially depends on the chosen direction. The agent is rewarded for finding a walkable path to a goal tile.
 
-[Link](https://gym.openai.com/evaluations/eval_OyMhE4BARAmQDY8ixyZALQ) to the upload of my run on OpenAI gym which took 85 episodes to solve.
+[FrozenLake solution on OpenAI gym](https://gym.openai.com/evaluations/eval_OyMhE4BARAmQDY8ixyZALQ): 85 episodes to solve using Watkin's Q(lambda)
+
+[CartPole solution on OpenAI gym](https://gym.openai.com/evaluations/eval_PlyN0960RSaPutNWGGpBxA): 867 episodes to solve using Policy Gradient method
 
 ## Notes
 The stochasticity in the environment introduces an element of luck and messes with the agent's learning. For example, the agent could choose a direction in a state based on the high Q value of that state-action pair, but the randomness could cause it to fall into the water instead. This would cause the agent to learn the a lower Q value for the previous state and action, even if it was a good action to take at that state.
