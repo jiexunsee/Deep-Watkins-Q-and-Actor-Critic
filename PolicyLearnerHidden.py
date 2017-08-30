@@ -2,8 +2,8 @@ import tensorflow as tf
 import numpy as np
 import random
 
-class PolicyLearner:
-	def __init__(self, n_actions, n_states, discount=0.8, alpha=0.01, beta=0.01, lambda_w=0.5, lambda_theta=0.5): # beta isn't currently being used
+class PolicyLearnerHidden:
+	def __init__(self, n_actions, n_states, discount=0.8, alpha=0.01, beta=0.01, lambda_w=0.3, lambda_theta=0.3, hidden=200, save_path=None): # beta isn't currently being used
 		self.n_actions = n_actions
 		self.n_states = n_states
 		self.discount = discount
@@ -11,10 +11,11 @@ class PolicyLearner:
 		self.beta = beta
 		self.lambda_w = lambda_w
 		self.lambda_theta = lambda_theta
+		self.hidden = hidden
 
 		tf.reset_default_graph()
 		tf.set_random_seed(2)
-		self.state_tensor, self.value_tensor, self.chosen_action_index, self.already_chosen, self.log_chosen_action_tensor, self.w_opt, self.theta_opt, self.theta, self.w = self._build_model()
+		self.state_tensor, self.value_tensor, self.chosen_action_index, self.already_chosen, self.log_chosen_action_tensor, self.w_opt, self.theta_opt, self.theta, self.w, self.saver = self._build_model()
 
 		self.w_grads_and_vars = self._get_grads_and_vars(self.w_opt, self.value_tensor, 'value')
 		self.theta_grads_and_vars = self._get_grads_and_vars(self.theta_opt, self.log_chosen_action_tensor, 'policy')
@@ -35,13 +36,21 @@ class PolicyLearner:
 		self.sess = tf.Session()
 		self.sess.run(tf.global_variables_initializer())
 
+		if save_path is not None:
+			print ('Restoring saved variables from: {}'.format(save_path))
+			self.saver.restore(self.sess, save_path)
+
 	def _build_model(self):
 		state_tensor = tf.placeholder(tf.float32, shape=(1, self.n_states))
-		w = tf.Variable(tf.truncated_normal(shape=(self.n_states, 1)), name='value_weight')
-		value_tensor = tf.matmul(state_tensor, w)
+		w1 = tf.Variable(tf.truncated_normal(shape=(self.n_states, self.hidden)), name='value_weight1')
+		w2 = tf.Variable(tf.truncated_normal(shape=(self.hidden, 1)), name='value_weight2')
+		hidden_value_tensor = tf.matmul(state_tensor, w1)
+		value_tensor = tf.matmul(hidden_value_tensor, w2)
 
-		theta = tf.Variable(tf.truncated_normal(shape=(self.n_states, self.n_actions)), name='policy_weight')
-		action_logits = tf.matmul(state_tensor, theta)
+		theta1 = tf.Variable(tf.truncated_normal(shape=(self.n_states, self.hidden)), name='policy_weight1')
+		theta2 = tf.Variable(tf.truncated_normal(shape=(self.hidden, self.n_actions)), name='policy_weight2')
+		hidden_policy_tensor = tf.matmul(state_tensor, theta1)
+		action_logits = tf.matmul(hidden_policy_tensor, theta2)
 		action_probabilities = tf.nn.softmax(action_logits) # doing this softmax here makes the gradient depend on the entire weight
 		chosen_action_index = tf.multinomial(tf.log(action_probabilities), num_samples=1) # picking according to probability
 
@@ -53,7 +62,9 @@ class PolicyLearner:
 		w_opt = tf.train.AdamOptimizer(self.alpha)
 		theta_opt = tf.train.AdamOptimizer(self.beta)
 
-		return state_tensor, value_tensor, chosen_action_index, already_chosen, log_chosen_action_tensor, w_opt, theta_opt, theta, w
+		saver = tf.train.Saver()
+
+		return state_tensor, value_tensor, chosen_action_index, already_chosen, log_chosen_action_tensor, w_opt, theta_opt, theta2, w2, saver
 
 	def _get_grads_and_vars(self, opt, target_tensor, variable_identifier):
 		variables = [var for var in tf.global_variables() if variable_identifier in var.op.name] # tf.get_variable() only works if the variable was created using tf.get_variable()
@@ -90,6 +101,10 @@ class PolicyLearner:
 		print (self.sess.run(self.theta))
 		print ('w:')
 		print (self.sess.run(self.w))
+
+	def save_model(self):
+		save_path = self.saver.save(self.sess, "tmp/model.ckpt")
+		print("Model saved in file: %s" % save_path)
 
 	def learn(self, state, action, next_state, reward):
 		target = reward + self.discount*self._get_value(next_state)

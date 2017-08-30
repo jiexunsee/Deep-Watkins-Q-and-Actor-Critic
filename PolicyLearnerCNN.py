@@ -3,9 +3,9 @@ import numpy as np
 import random
 
 class PolicyLearner:
-	def __init__(self, n_actions, n_states, discount=0.8, alpha=0.01, beta=0.01, lambda_w=0.5, lambda_theta=0.5): # beta isn't currently being used
+	def __init__(self, n_actions, state_shape, discount=0.8, alpha=0.01, beta=0.01, lambda_w=0.5, lambda_theta=0.5): # beta isn't currently being used
 		self.n_actions = n_actions
-		self.n_states = n_states
+		self.state_shape = state_shape
 		self.discount = discount
 		self.alpha = alpha
 		self.beta = beta
@@ -36,7 +36,7 @@ class PolicyLearner:
 		self.sess.run(tf.global_variables_initializer())
 
 	def _build_model(self):
-		state_tensor = tf.placeholder(tf.float32, shape=(1, self.n_states))
+		state_tensor = tf.placeholder(tf.float32, shape=(self.state_shape))
 		w = tf.Variable(tf.truncated_normal(shape=(self.n_states, 1)), name='value_weight')
 		value_tensor = tf.matmul(state_tensor, w)
 
