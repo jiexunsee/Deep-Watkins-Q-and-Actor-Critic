@@ -16,7 +16,9 @@ obs = env.reset()
 obs = prepro(obs)
 n_states = len(obs)
 
-agent = PolicyLearnerHidden(n_actions=n_actions, n_states=n_states, discount=0.8, lambda_w=0.3, lambda_theta=0.3, save_path='tmp/model.ckpt')
+save_path = 'tmp/model2.ckpt'
+
+agent = PolicyLearnerHidden(n_actions=n_actions, n_states=n_states, discount=0.8, alpha=0.05, beta=0.05, lambda_w=0.7, lambda_theta=0.7, save_path=save_path)
 
 s = time.time()
 
@@ -27,14 +29,17 @@ for e in range(episodes):
 	total_reward = 0
 	done = False
 	while not done:
-		x = state - prev_state
+		# x = state - prev_state
+		x = state
 		x = x.reshape(1, -1)
 		
 		action = agent.get_action(x)
+		# print (action)
 		
 		next_state, reward, done, _ = env.step(action)
 		next_state = prepro(next_state)
-		new_x = next_state - state
+		# new_x = next_state - state
+		new_x = next_state
 		new_x = new_x.reshape(1, -1)
 
 		# env.render()
@@ -50,7 +55,7 @@ for e in range(episodes):
 
 	agent.reset_e_trace()
 
-	if e%100 == 0:
+	if e%5 == 0:
 		agent.save_model()
 
 agent.save_model()

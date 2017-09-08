@@ -6,7 +6,7 @@ from helper import *
 from PolicyLearner import PolicyLearner
 
 name_of_gym = 'MountainCar-v0'
-episodes = 15000
+episodes = 50000
 
 env = gym.make(name_of_gym)
 env = gym.wrappers.Monitor(env, 'tmp/MountainCar-1', force=True)
@@ -15,7 +15,7 @@ n_actions = env.action_space.n
 obs = env.reset()
 n_states = len(obs)
 
-agent = PolicyLearner(n_actions=n_actions, n_states=n_states, discount=0.7)
+agent = PolicyLearner(n_actions=n_actions, n_states=n_states, discount=0.95, lambda_w=0.5, lambda_theta=0.5, alpha=0.1, beta=0.01)
 
 # Iterate the game
 s = time.time()

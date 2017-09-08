@@ -1,9 +1,11 @@
 import tensorflow as tf
 import numpy as np
 import random
+import os
 
+# WITH LSTM
 class PolicyLearnerHidden:
-	def __init__(self, n_actions, n_states, discount=0.8, alpha=0.01, beta=0.01, lambda_w=0.3, lambda_theta=0.3, hidden=200, save_path=None): # beta isn't currently being used
+	def __init__(self, n_actions, n_states, discount=0.8, alpha=0.01, beta=0.01, lambda_w=0.5, lambda_theta=0.5, hidden=200, lstm_size=200, save_path=None):
 		self.n_actions = n_actions
 		self.n_states = n_states
 		self.discount = discount
@@ -12,10 +14,12 @@ class PolicyLearnerHidden:
 		self.lambda_w = lambda_w
 		self.lambda_theta = lambda_theta
 		self.hidden = hidden
+		self.lstm_size = lstm_size
+		self.save_path = save_path
 
 		tf.reset_default_graph()
-		tf.set_random_seed(2)
-		self.state_tensor, self.value_tensor, self.chosen_action_index, self.already_chosen, self.log_chosen_action_tensor, self.w_opt, self.theta_opt, self.theta, self.w, self.saver = self._build_model()
+		tf.set_random_seed(20)
+		self.state_tensor, self.value_tensor, self.chosen_action_index, self.action_choice, self.log_chosen_action_tensor, self.w_opt, self.theta_opt, self.theta_lstm, self.saved_state, self.c_state_tensor, self.h_state_tensor, self.lstm_state, self.saver = self._build_model()
 
 		self.w_grads_and_vars = self._get_grads_and_vars(self.w_opt, self.value_tensor, 'value')
 		self.theta_grads_and_vars = self._get_grads_and_vars(self.theta_opt, self.log_chosen_action_tensor, 'policy')
@@ -36,38 +40,56 @@ class PolicyLearnerHidden:
 		self.sess = tf.Session()
 		self.sess.run(tf.global_variables_initializer())
 
-		if save_path is not None:
-			print ('Restoring saved variables from: {}'.format(save_path))
+		try:
 			self.saver.restore(self.sess, save_path)
+			print ('Saved variables restored from checkpoint: {}'.format(save_path))
+		except:
+			pass
 
 	def _build_model(self):
-		state_tensor = tf.placeholder(tf.float32, shape=(1, self.n_states))
-		w1 = tf.Variable(tf.truncated_normal(shape=(self.n_states, self.hidden)), name='value_weight1')
-		w2 = tf.Variable(tf.truncated_normal(shape=(self.hidden, 1)), name='value_weight2')
-		hidden_value_tensor = tf.matmul(state_tensor, w1)
-		value_tensor = tf.matmul(hidden_value_tensor, w2)
+		with tf.variable_scope('value'):
+			state_tensor = tf.placeholder(tf.float32, shape=(1, self.n_states))
+			w1 = tf.Variable(tf.truncated_normal(shape=(self.n_states, self.hidden)), name='value_weight1')
+			w2 = tf.Variable(tf.truncated_normal(shape=(self.hidden, 1)), name='value_weight2')
+			hidden_value_tensor = tf.matmul(state_tensor, w1)
+			value_tensor = tf.matmul(hidden_value_tensor, w2)
 
-		theta1 = tf.Variable(tf.truncated_normal(shape=(self.n_states, self.hidden)), name='policy_weight1')
-		theta2 = tf.Variable(tf.truncated_normal(shape=(self.hidden, self.n_actions)), name='policy_weight2')
-		hidden_policy_tensor = tf.matmul(state_tensor, theta1)
-		action_logits = tf.matmul(hidden_policy_tensor, theta2)
-		action_probabilities = tf.nn.softmax(action_logits) # doing this softmax here makes the gradient depend on the entire weight
-		chosen_action_index = tf.multinomial(tf.log(action_probabilities), num_samples=1) # picking according to probability
+		with tf.variable_scope('policy'):
+			# theta1 = tf.Variable(tf.truncated_normal(shape=(self.n_states, self.hidden)), name='policy_weight1')
+			theta_lstm = tf.contrib.rnn.BasicLSTMCell(self.lstm_size)
+			theta2 = tf.Variable(tf.truncated_normal(shape=(self.lstm_size, self.n_actions)), name='policy_weight2')
+			zero_state = theta_lstm.zero_state(1, tf.float32)
+			# zero_state = [np.zeros(zero_state[i].shape) for i in range(len(zero_state))]
+			# zero_state = tuple(zero_state)
+			c_state_tensor = tf.placeholder(tf.float32, shape=(1, self.lstm_size))
+			h_state_tensor = tf.placeholder(tf.float32, shape=(1, self.lstm_size))
 
-		# allowing us to get the gradient of the log probability of the CHOSEN action when it was chosen in the previous timestep and returned to the main script
-		already_chosen = tf.placeholder(tf.int32, shape=[])
-		chosen_action_prob_tensor = tf.gather(action_probabilities, already_chosen, axis=1)
+			lstm_input = tf.expand_dims(state_tensor, 0)
+			lstm_out, lstm_state = tf.nn.dynamic_rnn(theta_lstm, lstm_input, dtype=tf.float32)
+			# lstm_out, lstm_state = theta_lstm(state_tensor, zero_state)
 
-		log_chosen_action_tensor = tf.log(chosen_action_prob_tensor)
+			# hidden_policy_tensor = tf.matmul(state_tensor, theta1)
+			# action_logits = tf.matmul(hidden_policy_tensor, theta2)
+			lstm_out = tf.reshape(lstm_out, (1, -1))
+			action_logits = tf.matmul(lstm_out, theta2)
+			action_probabilities = tf.nn.softmax(action_logits) # doing this softmax here makes the gradient depend on the entire weight
+			chosen_action_index = tf.multinomial(tf.log(action_probabilities), num_samples=1) # picking according to probability
+
+			# allowing us to get the gradient of the log probability of the CHOSEN action when it was chosen in the previous timestep and returned to the main script
+			action_choice = tf.placeholder(tf.int32, shape=[])
+			chosen_action_prob_tensor = tf.gather(action_probabilities, action_choice, axis=1)
+
+			log_chosen_action_tensor = tf.log(chosen_action_prob_tensor)
+		
 		w_opt = tf.train.AdamOptimizer(self.alpha)
 		theta_opt = tf.train.AdamOptimizer(self.beta)
 
 		saver = tf.train.Saver()
 
-		return state_tensor, value_tensor, chosen_action_index, already_chosen, log_chosen_action_tensor, w_opt, theta_opt, theta2, w2, saver
+		return state_tensor, value_tensor, chosen_action_index, action_choice, log_chosen_action_tensor, w_opt, theta_opt, theta_lstm, zero_state, c_state_tensor, h_state_tensor, lstm_state, saver
 
 	def _get_grads_and_vars(self, opt, target_tensor, variable_identifier):
-		variables = [var for var in tf.global_variables() if variable_identifier in var.op.name] # tf.get_variable() only works if the variable was created using tf.get_variable()
+		variables = [var for var in tf.global_variables() if variable_identifier in var.name] # tf.get_variable() only works if the variable was created using tf.get_variable()
 		grads_and_vars = opt.compute_gradients(target_tensor, variables)
 		return grads_and_vars
 
@@ -80,7 +102,8 @@ class PolicyLearnerHidden:
 
 	def _update_e_trace(self, evaluated_gradients, e_trace, lamb):
 		for i in range(len(e_trace)):
-			e_trace[i] = lamb*e_trace[i] + self.I*evaluated_gradients[i]
+			# e_trace[i] = lamb*e_trace[i] + self.I*evaluated_gradients[i]
+			e_trace[i] = self.discount*lamb*e_trace[i] + evaluated_gradients[i]
 			assert(e_trace[i].shape == evaluated_gradients[i].shape)
 		return e_trace
 
@@ -95,25 +118,36 @@ class PolicyLearnerHidden:
 		self.w_e_trace = [0*e for e in self.w_e_trace]
 		self.theta_e_trace = [0*e for e in self.theta_e_trace]
 		self.I = 1
+		self.saved_theta = self.theta_lstm.zero_state(1, tf.float32)
 
 	def print_for_debug(self):
 		print ('Theta:')
-		print (self.sess.run(self.theta))
+		print (self.sess.run(self.theta_lstm))
 		print ('w:')
 		print (self.sess.run(self.w))
+		print (self.sess.run())
 
 	def save_model(self):
-		save_path = self.saver.save(self.sess, "tmp/model.ckpt")
-		print("Model saved in file: %s" % save_path)
+		save_name = self.saver.save(self.sess, self.save_path)
+		print("Model checkpoint saved in file: %s" % save_name)
 
 	def learn(self, state, action, next_state, reward):
 		target = reward + self.discount*self._get_value(next_state)
 		old_value = self._get_value(state)
-		delta = target - old_value
+		delta = np.asscalar(target - old_value)
 
 		w_gradients_evaluated = self.sess.run(self.w_gradients, feed_dict={self.state_tensor: state})
 		self.w_e_trace = self._update_e_trace(w_gradients_evaluated, self.w_e_trace, self.lambda_w)
-		theta_gradients_evaluated = self.sess.run(self.theta_gradients, feed_dict={self.state_tensor: state, self.already_chosen: action})
+
+		fd = {}
+		fd[self.state_tensor] = state
+		fd[self.action_choice] = action
+		if not isinstance(self.saved_state[0], tf.Tensor):
+			fd[self.c_state_tensor] = self.saved_state[0]
+			fd[self.h_state_tensor] = self.saved_state[1]
+		
+		theta_gradients_evaluated, self.saved_state = self.sess.run((self.theta_gradients, self.lstm_state), feed_dict=fd)
+		
 		self.theta_e_trace = self._update_e_trace(theta_gradients_evaluated, self.theta_e_trace, self.lambda_theta)
 
 		w_change = [-delta * e for e in self.w_e_trace]

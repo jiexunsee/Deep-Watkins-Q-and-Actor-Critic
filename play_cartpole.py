@@ -6,10 +6,12 @@ import time
 from helper import *
 # from DeepTDLambdaLearner import DeepTDLambdaLearner
 from PolicyLearner import PolicyLearner
+from PolicyLearnerHidden import PolicyLearnerHidden
 
+# tf random seed 1000 works well
 
 name_of_gym = 'CartPole-v0'
-episodes = 15000
+episodes = 1000
 
 env = gym.make(name_of_gym)
 env = wrappers.Monitor(env, 'tmp/cartpole-3', force=True)
@@ -18,7 +20,8 @@ n_actions = env.action_space.n
 obs = env.reset()
 n_states = len(obs)
 
-agent = PolicyLearner(n_actions=n_actions, n_states=n_states)
+# agent = PolicyLearnerHidden(n_actions=n_actions, n_states=n_states, lambda_w=0.8, lambda_theta=0.8, lstm_size=5, hidden=5, alpha=0.01, beta=0.01)
+agent = PolicyLearner(n_actions=n_actions, n_states=n_states, lambda_w=0.9, lambda_theta=0.9, alpha=0.05, beta=0.005, discount=0.95)
 
 # Iterate the game
 s = time.time()
@@ -35,7 +38,7 @@ for e in range(episodes):
 		# print (action)
 		next_state, reward, done, _ = env.step(action)
 		next_state = np.reshape(next_state, (1, -1))
-		# env.render()
+		env.render()
 
 		if done:
 			if total_reward < 199:
