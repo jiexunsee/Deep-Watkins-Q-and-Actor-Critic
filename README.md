@@ -39,7 +39,7 @@ Running this algorithm on gym's [FrozenLake-v0](https://gym.openai.com/envs/Froz
 
 [FrozenLake solution on OpenAI gym](https://gym.openai.com/evaluations/eval_OyMhE4BARAmQDY8ixyZALQ): 85 episodes to solve using Watkin's Q(lambda)
 
-[CartPole solution on OpenAI gym](https://gym.openai.com/evaluations/eval_PlyN0960RSaPutNWGGpBxA): 867 episodes to solve using Policy Gradient method
+[CartPole solution on OpenAI gym](https://gym.openai.com/evaluations/eval_7wiWpSABTsKdKO3liP3jgw): 195 episodes to solve using Policy Gradient method
 
 ## Notes
 The stochasticity in the environment introduces an element of luck and messes with the agent's learning. For example, the agent could choose a direction in a state based on the high Q value of that state-action pair, but the randomness could cause it to fall into the water instead. This would cause the agent to learn the a lower Q value for the previous state and action, even if it was a good action to take at that state.
