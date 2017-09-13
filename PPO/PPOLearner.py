@@ -11,11 +11,9 @@ class PPOLearner:
 		self.lam = lam
 
 		tf.reset_default_graph()
-		value_network = ValueNetwork(action_dim, state_dim, value_lr)
-		policy_network = PolicyNetwork(action_dim, state_dim, policy_lr)
 
-		self.sess = tf.Session()
-		self.sess.run(tf.global_variables_initializer())
+		self.value_network = ValueNetwork(state_dim, value_lr)
+		self.policy_network = PolicyNetwork(action_dim, state_dim, policy_lr)
 
 		try:
 			self.saver.restore(self.sess, save_path)
@@ -37,6 +35,7 @@ class PPOLearner:
 	def run_timesteps(self, env, T):
 		states, actions, rewards = [], [], [] # states will have one more entry than actions, rewards
 		state = env.reset()
+		state = np.reshape(state, (1, -1))
 		states.append(state)
 		for j in range(T):
 			state = np.reshape(state, (1, -1))
@@ -47,9 +46,13 @@ class PPOLearner:
 			actions.append(action)
 			rewards.append(reward)
 
+			if done:
+				break
+
 			state = next_state
 
-		return states, actions, rewards
+		return states, actions, rewards			
+
 
 	def compute_targets_and_advantages(self, state_data, action_data, reward_data):
 		target_data = []
@@ -93,8 +96,8 @@ class PPOLearner:
 			for j in range(epochs):
 				batch_generator = self.get_batches(M, state_data, action_data, target_data, advantage_data)
 				for s, a, t, adv in batch_generator:
-					self.value_network.update(s, a, adv)
-					self.policy_network.update(s, t)
+					self.value_network.update(s, t)
+					self.policy_network.update(s, a, adv)
 
 
 	def get_batches(self, M, state_data, action_data, target_data, advantage_data): # concatenate the states, actions... lists together into one whole list

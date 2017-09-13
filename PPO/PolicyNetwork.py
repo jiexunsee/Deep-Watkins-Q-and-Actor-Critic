@@ -1,18 +1,19 @@
-import tensorflow as tensorflow
+import tensorflow as tf
 import numpy as np
 
 class PolicyNetwork:
-	def __init__(action_dim, state_dim, lr):
+	def __init__(self, action_dim, state_dim, lr):
 		self.action_dim = action_dim
 		self.state_dim = state_dim
 		self.lr = lr
+		self.e = 0.2
 
 		self._build_graph()
 
 		self.sess = tf.Session(graph=self.g)
-		self.sess.run(tf.global_variables_initializer())
+		self.sess.run(self.init)
 
-	def _build_model(self):
+	def _build_graph(self):
 		self.g = tf.Graph()
 		with self.g.as_default():
 			# Placeholders
@@ -25,13 +26,13 @@ class PolicyNetwork:
 			# Hidden layer sizes
 			h1_size = self.state_dim*10
 			h3_size = self.action_dim*10
-			h2_size = np.sqrt(h1_size*h3_size)
+			h2_size = int(np.sqrt(h1_size*h3_size))
 
 			# Network weights
 			self.w1 = tf.Variable(tf.truncated_normal(shape=(self.state_dim, h1_size)))
-			self.w2 = tf.Variable(tf.truncated_normal(shape=(self.h1_size, self.h2_size)))
-			self.w3 = tf.Variable(tf.truncated_normal(shape=(self.h2_size, self.h3_size)))
-			self.w4 = tf.Variable(tf.truncated_normal(shape=(self.h3_size, self.action_dim)))
+			self.w2 = tf.Variable(tf.truncated_normal(shape=(h1_size, h2_size)))
+			self.w3 = tf.Variable(tf.truncated_normal(shape=(h2_size, h3_size)))
+			self.w4 = tf.Variable(tf.truncated_normal(shape=(h3_size, self.action_dim)))
 			self.log_vars = tf.Variable(tf.truncated_normal(shape=(1, self.action_dim)))
 
 			# Graph operations
@@ -39,16 +40,19 @@ class PolicyNetwork:
 			a2 = tf.matmul(a1, self.w2)
 			a3 = tf.matmul(a2, self.w3)
 			self.pred_means = tf.matmul(a3, self.w4)
-			self.sampled_act = (pred_means + tf.exp(self.log_vars/2.0) * tf.random_normal(shape=(self.action_dim,)))
+			self.sampled_act = (self.pred_means + tf.exp(self.log_vars/2.0) * tf.random_normal(shape=(self.action_dim,)))
 
 			# Optimisation-related
-			self.logp = self.find_log_prob(self.act_ph, self.means, self.log_vars)
-			self.logp_old = self.find_log_prob(self.act_ph, self.old_means_ph, self.old_log_vars_ph)
+			self.logp = self.find_log_prob(self.actions_ph, self.pred_means, self.log_vars)
+			self.logp_old = self.find_log_prob(self.actions_ph, self.old_means_ph, self.old_log_vars_ph)
 			ratio = tf.exp(self.logp - self.logp_old)
 			clipped_ratio = tf.clip_by_value(ratio, 1-self.e, 1+self.e)
 			objective = tf.minimum(ratio*self.advs_ph, clipped_ratio*self.advs_ph)
 			self.loss = tf.reduce_mean(objective)
 			self.opt = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
+
+			# Init operation
+			self.init = tf.global_variables_initializer()
 
 	def find_log_prob(self, action, means, log_vars):
 		logp = -0.5 * tf.reduce_sum(log_vars)

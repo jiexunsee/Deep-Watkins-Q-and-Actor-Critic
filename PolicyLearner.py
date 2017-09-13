@@ -40,7 +40,7 @@ class PolicyLearner:
 		w = tf.Variable(tf.truncated_normal(shape=(self.n_states, 1)), name='value_weight')
 		value_tensor = tf.matmul(state_tensor, w)
 
-		theta = tf.Variable(tf.truncated_normal(shape=(self.n_states, self.n_actions)), name='policy_weight')
+		theta = tf.Variable(tf.zeros(shape=(self.n_states, self.n_actions)), name='policy_weight')
 		action_logits = tf.matmul(state_tensor, theta)
 		action_probabilities = tf.nn.softmax(action_logits) # doing this softmax here makes the gradient depend on the entire weight
 		chosen_action_index = tf.multinomial(tf.log(action_probabilities), num_samples=1) # picking according to probability

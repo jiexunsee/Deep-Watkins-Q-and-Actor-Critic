@@ -18,7 +18,7 @@ class PolicyLearnerHidden:
 		self.save_path = save_path
 
 		tf.reset_default_graph()
-		tf.set_random_seed(20)
+		tf.set_random_seed(200)
 		self.state_tensor, self.value_tensor, self.chosen_action_index, self.action_choice, self.log_chosen_action_tensor, self.w_opt, self.theta_opt, self.theta_lstm, self.saved_state, self.c_state_tensor, self.h_state_tensor, self.lstm_state, self.saver = self._build_model()
 
 		self.w_grads_and_vars = self._get_grads_and_vars(self.w_opt, self.value_tensor, 'value')
@@ -49,10 +49,12 @@ class PolicyLearnerHidden:
 	def _build_model(self):
 		with tf.variable_scope('value'):
 			state_tensor = tf.placeholder(tf.float32, shape=(1, self.n_states))
-			w1 = tf.Variable(tf.truncated_normal(shape=(self.n_states, self.hidden)), name='value_weight1')
-			w2 = tf.Variable(tf.truncated_normal(shape=(self.hidden, 1)), name='value_weight2')
-			hidden_value_tensor = tf.matmul(state_tensor, w1)
-			value_tensor = tf.matmul(hidden_value_tensor, w2)
+			self.w1 = tf.Variable(tf.truncated_normal(shape=(self.n_states, 1)), name='value_weight1')
+			# w1 = tf.Variable(tf.truncated_normal(shape=(self.n_states, self.hidden)), name='value_weight1')
+			# w2 = tf.Variable(tf.truncated_normal(shape=(self.hidden, 1)), name='value_weight2')
+			# hidden_value_tensor = tf.matmul(state_tensor, w1)
+			# value_tensor = tf.matmul(hidden_value_tensor, w2)
+			value_tensor = tf.matmul(state_tensor, self.w1)
 
 		with tf.variable_scope('policy'):
 			# theta1 = tf.Variable(tf.truncated_normal(shape=(self.n_states, self.hidden)), name='policy_weight1')
@@ -118,14 +120,16 @@ class PolicyLearnerHidden:
 		self.w_e_trace = [0*e for e in self.w_e_trace]
 		self.theta_e_trace = [0*e for e in self.theta_e_trace]
 		self.I = 1
-		self.saved_theta = self.theta_lstm.zero_state(1, tf.float32)
+		# zero_states = self.theta_lstm.zero_state(1, tf.float32)
+		self.saved_state = (np.zeros((1, self.lstm_size)), np.zeros((1, self.lstm_size)))
 
 	def print_for_debug(self):
-		print ('Theta:')
-		print (self.sess.run(self.theta_lstm))
-		print ('w:')
-		print (self.sess.run(self.w))
-		print (self.sess.run())
+		# print ('Theta:')
+		# print (self.sess.run(self.theta_lstm))
+		# print ('w:')
+		print (self.sess.run(self.w1))
+		# print (self.saved_state)
+
 
 	def save_model(self):
 		save_name = self.saver.save(self.sess, self.save_path)
