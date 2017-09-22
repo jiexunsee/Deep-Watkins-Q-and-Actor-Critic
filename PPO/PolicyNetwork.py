@@ -2,16 +2,23 @@ import tensorflow as tf
 import numpy as np
 
 class PolicyNetwork:
-	def __init__(self, action_dim, state_dim, lr):
+	def __init__(self, action_dim, state_dim, lr, save_path='model/policy_network'):
 		self.action_dim = action_dim
 		self.state_dim = state_dim
 		self.lr = lr
 		self.e = 0.2
+		self.save_path = save_path
 
 		self._build_graph()
 
 		self.sess = tf.Session(graph=self.g)
 		self.sess.run(self.init)
+
+		try:
+			self.saver.restore(self.sess, save_path)
+			print ('Saved variables restored from checkpoint: {}'.format(save_path))
+		except:
+			pass
 
 	def _build_graph(self):
 		self.g = tf.Graph()
@@ -29,11 +36,31 @@ class PolicyNetwork:
 			h2_size = int(np.sqrt(h1_size*h3_size))
 
 			# Network weights
+			'''one layer'''
+			# self.w1 = tf.Variable(tf.truncated_normal(shape=(self.state_dim, self.action_dim)))
+			# self.pred_means = tf.matmul(self.states_ph, self.w1)
+
+			'''hidden layers'''
 			self.w1 = tf.Variable(tf.truncated_normal(shape=(self.state_dim, h1_size)))
 			self.w2 = tf.Variable(tf.truncated_normal(shape=(h1_size, h2_size)))
 			self.w3 = tf.Variable(tf.truncated_normal(shape=(h2_size, h3_size)))
 			self.w4 = tf.Variable(tf.truncated_normal(shape=(h3_size, self.action_dim)))
-			self.log_vars = tf.Variable(tf.truncated_normal(shape=(1, self.action_dim)))
+
+			'''one hidden layer'''
+			# h1_size = 200
+			# self.w1 = tf.Variable(tf.truncated_normal(shape=(self.state_dim, h1_size)))
+			# self.w2 = tf.Variable(tf.truncated_normal(shape=(h1_size, self.action_dim)))
+			# a1 = tf.matmul(self.states_ph, self.w1)
+			# a1 = tf.nn.relu(a1)
+			# a2 = tf.matmul(a1, self.w2)
+
+
+			# Network weights
+			# self.w1 = tf.Variable(tf.truncated_normal(shape=(self.state_dim, h1_size)))
+			# self.w2 = tf.Variable(tf.truncated_normal(shape=(h1_size, h2_size)))
+			# self.w3 = tf.Variable(tf.truncated_normal(shape=(h2_size, h3_size)))
+			# self.w4 = tf.Variable(tf.truncated_normal(shape=(h3_size, self.action_dim)))
+			self.log_vars = tf.Variable(tf.truncated_normal(shape=(1, self.action_dim), stddev=0.01))
 
 			# Graph operations
 			a1 = tf.matmul(self.states_ph, self.w1)
@@ -48,11 +75,14 @@ class PolicyNetwork:
 			ratio = tf.exp(self.logp - self.logp_old)
 			clipped_ratio = tf.clip_by_value(ratio, 1-self.e, 1+self.e)
 			objective = tf.minimum(ratio*self.advs_ph, clipped_ratio*self.advs_ph)
-			self.loss = tf.reduce_mean(objective)
+			self.loss = tf.reduce_mean(-objective)
 			self.opt = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
 
 			# Init operation
 			self.init = tf.global_variables_initializer()
+
+			# Saver
+			self.saver = tf.train.Saver()
 
 	def find_log_prob(self, action, means, log_vars):
 		logp = -0.5 * tf.reduce_sum(log_vars)
@@ -65,8 +95,19 @@ class PolicyNetwork:
 
 	def update(self, states, actions, advantages):
 		feed_dict = {self.states_ph: states, self.actions_ph: actions, self.advs_ph: advantages}
+		# print (states.shape)
+		# print (actions.shape)
+		# print (advantages.shape)
 		old_means, old_log_vars = self.sess.run([self.pred_means, self.log_vars], feed_dict)
-		feed_dict[self.old_log_vars_ph] = old_log_vars_np
-		feed_dict[self.old_means_ph] = old_means_np
+		feed_dict[self.old_log_vars_ph] = old_log_vars
+		feed_dict[self.old_means_ph] = old_means
 
-		self.sess.run(self.opt, feed_dict=feed_dict)
+		_ = self.sess.run([self.opt], feed_dict=feed_dict)
+
+	def print_for_debug(self):
+		w1 = self.sess.run(self.w1)
+		print (w1)
+
+	def save_model(self):
+		save_name = self.saver.save(self.sess, self.save_path)
+		print("Policy network checkpoint saved in file: %s" % save_name)

@@ -70,6 +70,7 @@ class PolicyNetworkDiscrete:
 			objective = tf.minimum(self.ratio*self.advs_ph, clipped_ratio*self.advs_ph)
 			self.loss = tf.reduce_mean(-objective)
 			self.opt = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
+			
 			# Saver
 			self.saver = tf.train.Saver()
 

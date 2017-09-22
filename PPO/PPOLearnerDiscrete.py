@@ -25,13 +25,6 @@ class PPOLearnerDiscrete:
 		self.value_network = ValueNetwork(state_dim, value_lr)
 		self.policy_network = PolicyNetworkDiscrete(action_dim, state_dim, policy_lr)
 
-		try:
-			self.saver.restore(self.sess, save_path)
-			print ('Saved variables restored from checkpoint: {}'.format(save_path))
-		except:
-			pass
-
-
 	def collect_data(self, env, N, T, render):
 		state_data, action_data, reward_data = [], [], []
 		for i in range(N):
@@ -43,67 +36,68 @@ class PPOLearnerDiscrete:
 		return state_data, action_data, reward_data
 
 	def run_timesteps(self, env, T, render):
-		# states, actions, rewards = [], [], [] # states will have one more entry than actions, rewards
-		# state = env.reset()
-		# states.append(state)
-		# for j in range(T):
-		# 	state = np.reshape(state, (1, -1))
-		# 	action = np.asscalar(self.policy_network.get_action(state))
-
-		# 	# the action chosen can be out of range, probably when NaNs occur from training
-		# 	# if action != 0 and action != 1:
-		# 	# 	print ('Wrong action: {}'. format(action))
-
-		# 	next_state, reward, done, _ = env.step(action)
-
-		# 	if render:
-		# 		env.render()
-
-		# 	states.append(next_state) # state is a standard list, not numpy array which would cause problems feeding dict
-		# 	actions.append(action)
-		# 	if done:
-		# 		if len(rewards) < 199:
-		# 			reward = -10 # CHANGE THIS ACOORDINGLY FOR CARTPOLE/MOUNTAINCAR
-		# 	rewards.append(reward)
-
-		# 	if done:
-		# 		break
-			
-
-		# 	state = next_state
-		# env.close()
-
-		# return states, actions, rewards
-
-		states, actions, rewards = [], [], []
+		states, actions, rewards = [], [], [] # states will have one more entry than actions, rewards
 		state = env.reset()
-		state = prepro(state)
-		prev_state = np.zeros_like(state)
-		x = state - prev_state
-		states.append(x)
+		states.append(state)
 		for j in range(T):
-			x = state - prev_state
-			x = np.reshape(x, (1, -1))
-			action = np.asscalar(self.policy_network.get_action(x))
+			print (state)
+			state = np.reshape(state, (1, -1))
+			action = np.asscalar(self.policy_network.get_action(state))
+
+			# the action chosen can be out of range, probably when NaNs occur from training
+			# if action != 0 and action != 1:
+			# 	print ('Wrong action: {}'. format(action))
+
 			next_state, reward, done, _ = env.step(action)
 
-			env.render()
+			if render:
+				env.render()
 
-			next_state = prepro(next_state)
-			new_x = next_state - state
-
-			states.append(new_x)
+			states.append(next_state) # state is a standard list, not numpy array which would cause problems feeding dict
 			actions.append(action)
+			if done:
+				if len(rewards) < 199:
+					reward = -10 # CHANGE THIS ACOORDINGLY FOR CARTPOLE/MOUNTAINCAR
 			rewards.append(reward)
 
 			if done:
 				break
+			
 
-			prev_state = state
 			state = next_state
 		env.close()
 
 		return states, actions, rewards
+
+		# states, actions, rewards = [], [], []
+		# state = env.reset()
+		# state = prepro(state)
+		# prev_state = np.zeros_like(state)
+		# x = state - prev_state
+		# states.append(x)
+		# for j in range(T):
+		# 	x = state - prev_state
+		# 	x = np.reshape(x, (1, -1))
+		# 	action = np.asscalar(self.policy_network.get_action(x))
+		# 	next_state, reward, done, _ = env.step(action)
+
+		# 	env.render()
+
+		# 	next_state = prepro(next_state)
+		# 	new_x = next_state - state
+
+		# 	states.append(new_x)
+		# 	actions.append(action)
+		# 	rewards.append(reward)
+
+		# 	if done:
+		# 		break
+
+		# 	prev_state = state
+		# 	state = next_state
+		# env.close()
+
+		# return states, actions, rewards
 
 	def compute_targets_and_advantages(self, state_data, reward_data):
 		target_data = []
@@ -119,6 +113,7 @@ class PPOLearnerDiscrete:
 			advantages = []
 
 			states = np.reshape(states, (-1, len(states[0])))
+			print (states.shape)
 			values = self.value_network.get_value(states)
 			for i in range(len(rewards)):
 				target, advantage = self.compute_timestep_target_and_advantage(values[i:], rewards[i:])
@@ -146,11 +141,13 @@ class PPOLearnerDiscrete:
 		for i in range(iterations):
 			print ('Collecting data...')
 			state_data, action_data, reward_data = self.collect_data(env, N, T, render)
-			print ('Computing targets and advantages...')
-			target_data, advantage_data = self.compute_targets_and_advantages(state_data, reward_data)
 
 			average_reward = np.sum(np.sum(reward_data))/len(reward_data)
 			print ('Iteration {}: Average reward = {}'.format(i, average_reward))
+
+			print ('Computing targets and advantages...')
+			target_data, advantage_data = self.compute_targets_and_advantages(state_data, reward_data)
+
 			# self.print_for_debug()
 
 			for j in range(epochs):

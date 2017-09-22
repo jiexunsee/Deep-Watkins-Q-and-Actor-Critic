@@ -10,7 +10,7 @@ from PolicyLearnerHidden import PolicyLearnerHidden
 
 # tf random seed 1000 works well
 
-name_of_gym = 'CartPole-v0'
+name_of_gym = 'CartPole-v1'
 episodes = 10000
 
 env = gym.make(name_of_gym)
@@ -21,7 +21,7 @@ obs = env.reset()
 n_states = len(obs)
 
 # agent = PolicyLearnerHidden(n_actions=n_actions, n_states=n_states, lambda_w=0.5, lambda_theta=0.5, lstm_size=5, hidden=5, alpha=0.05, beta=0.001)
-agent = PolicyLearner(n_actions=n_actions, n_states=n_states, lambda_w=0.9, lambda_theta=0.9, alpha=0.01, beta=0.005, discount=0.95)
+agent = PolicyLearner(n_actions=n_actions, n_states=n_states, lambda_w=0.9, lambda_theta=0.9, alpha=0.03, beta=0.005, discount=0.95)
 
 # Iterate the game
 s = time.time()
@@ -32,9 +32,6 @@ for e in range(episodes):
 	total_reward = 0
 	done = False
 
-	if e > 300:
-		agent.print_for_debug()
-
 	while not done:
 		# agent.print_for_debug()
 		state = np.reshape(state, (1, -1))
@@ -43,10 +40,10 @@ for e in range(episodes):
 		# print (action)
 		next_state, reward, done, _ = env.step(action)
 		next_state = np.reshape(next_state, (1, -1))
-		# env.render()
+		env.render()
 
 		if done:
-			if total_reward < 199:
+			if total_reward < 499:
 				reward = -10
 
 		agent.learn(state, action, next_state, reward)

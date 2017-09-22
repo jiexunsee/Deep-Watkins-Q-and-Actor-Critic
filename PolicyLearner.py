@@ -50,6 +50,10 @@ class PolicyLearner:
 		chosen_action_prob_tensor = tf.gather(action_probabilities, action_choice, axis=1)
 
 		log_chosen_action_tensor = tf.log(chosen_action_prob_tensor)
+
+		# global_step = tf.Variable(0, trainable=False)
+		# alpha_lr = tf.train.exponential_decay(self.alpha, global_step,
+  #                                          100, 0.96, staircase=True)
 		w_opt = tf.train.AdamOptimizer(self.alpha)
 		theta_opt = tf.train.AdamOptimizer(self.beta)
 
