@@ -11,6 +11,7 @@ from PolicyLearnerHidden import PolicyLearnerHidden
 # tf random seed 1000 works well
 
 name_of_gym = 'CartPole-v1'
+# name_of_gym = 'CartPole-v0'
 episodes = 10000
 
 env = gym.make(name_of_gym)
@@ -20,7 +21,7 @@ n_actions = env.action_space.n
 obs = env.reset()
 n_states = len(obs)
 
-# agent = PolicyLearnerHidden(n_actions=n_actions, n_states=n_states, lambda_w=0.5, lambda_theta=0.5, lstm_size=5, hidden=5, alpha=0.05, beta=0.001)
+# agent = PolicyLearnerHidden(n_actions=n_actions, n_states=n_states, lambda_w=0.9, lambda_theta=0.9, lstm_size=20, hidden=5, alpha=0.03, beta=0.001)
 agent = PolicyLearner(n_actions=n_actions, n_states=n_states, lambda_w=0.9, lambda_theta=0.9, alpha=0.03, beta=0.005, discount=0.95)
 
 # Iterate the game
@@ -58,7 +59,7 @@ for e in range(episodes):
 		# agent.print_for_debug()
 	# 	print("episode: {}/{}, score: {:.0f}".format(e, episodes, total_reward))
 	
-	agent.reset_e_trace()
+	agent.reset()
 
 e = time.time()
 print ('TIME TAKEN: {}'.format(e-s))

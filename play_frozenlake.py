@@ -18,10 +18,10 @@ register(
 )
 
 if len(sys.argv) <= 1:
-	print ('Using lambda of 0.5')
 	lamb = 0.5
 else:
 	lamb = float(sys.argv[1])
+print ('USING LAMBDA OF {}\n'.format(lamb))
 
 
 name_of_gym = 'FrozenLake-v0'
@@ -29,6 +29,7 @@ episodes = 600
 
 env = gym.make(name_of_gym)
 # env = gym.make('FrozenLakeNotSlippery-v0')
+
 # env = wrappers.Monitor(env, '/tmp/frozenlake-1', force=True)
 n_actions = env.action_space.n
 
@@ -74,9 +75,6 @@ for e in range(episodes):
 			else:
 				print("episode: {}/{}, score: {:.2f}".format(e, episodes, total_reward))
 			break
-	
-	# if e%100 == 0:
-	# 	agent.print_weights()
 
 	agent.reset_e_trace()
 

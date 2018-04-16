@@ -85,7 +85,7 @@ class PolicyLearner:
 		action = self.sess.run(self.chosen_action_index, feed_dict={self.state_tensor: state})
 		return np.asscalar(action)
 
-	def reset_e_trace(self):
+	def reset(self):
 		self.w_e_trace = [0*e for e in self.w_e_trace]
 		self.theta_e_trace = [0*e for e in self.theta_e_trace]
 		self.I = 1

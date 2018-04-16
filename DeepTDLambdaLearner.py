@@ -27,6 +27,7 @@ class DeepTDLambdaLearner:
 	def _build_model(self):
 		state_tensor = tf.placeholder(tf.float32, shape=(1, self.n_states))
 		weight1 = tf.Variable(tf.zeros(shape=(self.n_states, self.n_actions)))
+		# weight1 = tf.Variable(tf.truncated_normal(shape=(self.n_states, self.n_actions), stddev=0.01))
 		# bias1 = tf.Variable(tf.zeros(self.n_actions))
 		# Q_values_tensor = tf.add(tf.matmul(state_tensor, weight1), bias1)
 		Q_values_tensor = tf.matmul(state_tensor, weight1)

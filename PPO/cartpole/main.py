@@ -19,8 +19,8 @@ T = 1100
 M = 32
 lam = 0.9
 discount = 0.9
-value_lr = 0.01
-policy_lr = 0.01
+value_lr = 0.04
+policy_lr = 0.04
 
 render = True
 

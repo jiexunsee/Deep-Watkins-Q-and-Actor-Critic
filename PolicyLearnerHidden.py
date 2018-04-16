@@ -5,7 +5,7 @@ import os
 
 # WITH LSTM
 class PolicyLearnerHidden:
-	def __init__(self, n_actions, n_states, discount=0.8, alpha=0.01, beta=0.01, lambda_w=0.5, lambda_theta=0.5, hidden=200, lstm_size=200, save_path=None):
+	def __init__(self, n_actions, n_states, discount=0.8, alpha=0.01, beta=0.01, lambda_w=0.5, lambda_theta=0.5, hidden=200, lstm_size=20, save_path=None):
 		self.n_actions = n_actions
 		self.n_states = n_states
 		self.discount = discount
@@ -19,7 +19,8 @@ class PolicyLearnerHidden:
 
 		tf.reset_default_graph()
 		tf.set_random_seed(200)
-		self.state_tensor, self.value_tensor, self.chosen_action_index, self.action_choice, self.log_chosen_action_tensor, self.w_opt, self.theta_opt, self.theta_lstm, self.saved_state, self.c_state_tensor, self.h_state_tensor, self.lstm_state, self.saver = self._build_model()
+		self.state_tensor, self.value_tensor, self.chosen_action_index, self.action_choice, self.log_chosen_action_tensor, self.w_opt, self.theta_opt, self.theta_lstm, self.c_state_tensor, self.h_state_tensor, self.lstm_state, self.saver = self._build_model()
+		self.saved_state = (np.zeros((1, self.lstm_size)), np.zeros((1, self.lstm_size)))
 
 		self.w_grads_and_vars = self._get_grads_and_vars(self.w_opt, self.value_tensor, 'value')
 		self.theta_grads_and_vars = self._get_grads_and_vars(self.theta_opt, self.log_chosen_action_tensor, 'policy')
@@ -60,14 +61,17 @@ class PolicyLearnerHidden:
 			# theta1 = tf.Variable(tf.truncated_normal(shape=(self.n_states, self.hidden)), name='policy_weight1')
 			theta_lstm = tf.contrib.rnn.BasicLSTMCell(self.lstm_size)
 			theta2 = tf.Variable(tf.truncated_normal(shape=(self.lstm_size, self.n_actions)), name='policy_weight2')
-			zero_state = theta_lstm.zero_state(1, tf.float32)
+			# zero_state = theta_lstm.zero_state(1, tf.float32)
 			# zero_state = [np.zeros(zero_state[i].shape) for i in range(len(zero_state))]
 			# zero_state = tuple(zero_state)
-			c_state_tensor = tf.placeholder(tf.float32, shape=(1, self.lstm_size))
-			h_state_tensor = tf.placeholder(tf.float32, shape=(1, self.lstm_size))
+
+			print('lstm size {}'.format(self.lstm_size))
+			c_state_tensor = tf.placeholder(tf.float32, shape=(1, self.lstm_size), name='c_state_tensor') # these tensors don't seem to be fed anywhere?
+			h_state_tensor = tf.placeholder(tf.float32, shape=(1, self.lstm_size), name='h_state_tensor')
+			rnn_tuple_state = tf.nn.rnn_cell.LSTMStateTuple(c_state_tensor, h_state_tensor)
 
 			lstm_input = tf.expand_dims(state_tensor, 0)
-			lstm_out, lstm_state = tf.nn.dynamic_rnn(theta_lstm, lstm_input, dtype=tf.float32)
+			lstm_out, lstm_state = tf.nn.dynamic_rnn(theta_lstm, lstm_input, initial_state=rnn_tuple_state, dtype=tf.float32)
 			# lstm_out, lstm_state = theta_lstm(state_tensor, zero_state)
 
 			# hidden_policy_tensor = tf.matmul(state_tensor, theta1)
@@ -88,7 +92,7 @@ class PolicyLearnerHidden:
 
 		saver = tf.train.Saver()
 
-		return state_tensor, value_tensor, chosen_action_index, action_choice, log_chosen_action_tensor, w_opt, theta_opt, theta_lstm, zero_state, c_state_tensor, h_state_tensor, lstm_state, saver
+		return state_tensor, value_tensor, chosen_action_index, action_choice, log_chosen_action_tensor, w_opt, theta_opt, theta_lstm, c_state_tensor, h_state_tensor, lstm_state, saver
 
 	def _get_grads_and_vars(self, opt, target_tensor, variable_identifier):
 		variables = [var for var in tf.global_variables() if variable_identifier in var.name] # tf.get_variable() only works if the variable was created using tf.get_variable()
@@ -112,11 +116,16 @@ class PolicyLearnerHidden:
 	def _get_value(self, state):
 		return self.sess.run(self.value_tensor, feed_dict={self.state_tensor: state})
 
-	def get_action(self, state):
-		action = self.sess.run(self.chosen_action_index, feed_dict={self.state_tensor: state})
+	def get_action(self, state): # do we need to pass the last lstm state here? for a stateful lstm where state persists over batches
+		fd = {}
+		fd[self.state_tensor] = state
+		fd[self.c_state_tensor] = self.saved_state[0]
+		fd[self.h_state_tensor] = self.saved_state[1]
+		
+		action, self.saved_state = self.sess.run([self.chosen_action_index, self.lstm_state], feed_dict=fd)
 		return np.asscalar(action)
 
-	def reset_e_trace(self):
+	def reset(self):
 		self.w_e_trace = [0*e for e in self.w_e_trace]
 		self.theta_e_trace = [0*e for e in self.theta_e_trace]
 		self.I = 1
@@ -146,11 +155,10 @@ class PolicyLearnerHidden:
 		fd = {}
 		fd[self.state_tensor] = state
 		fd[self.action_choice] = action
-		if not isinstance(self.saved_state[0], tf.Tensor):
-			fd[self.c_state_tensor] = self.saved_state[0]
-			fd[self.h_state_tensor] = self.saved_state[1]
+		fd[self.c_state_tensor] = self.saved_state[0]
+		fd[self.h_state_tensor] = self.saved_state[1]
 		
-		theta_gradients_evaluated, self.saved_state = self.sess.run((self.theta_gradients, self.lstm_state), feed_dict=fd)
+		theta_gradients_evaluated = self.sess.run(self.theta_gradients, feed_dict=fd)
 		
 		self.theta_e_trace = self._update_e_trace(theta_gradients_evaluated, self.theta_e_trace, self.lambda_theta)
 
